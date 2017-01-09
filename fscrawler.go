@@ -10,6 +10,7 @@ import (
     "crypto/md5"
     "io"
     "encoding/hex"
+    "strings"
 )
 
 
@@ -55,7 +56,7 @@ func check(e error) {
     }
 }
 
-func Investigate(l *list.List) {
+func FindDuplicates(l *list.List) {
     similar := make(map[string]*list.List)
     for e := l.Front(); e != nil; e = e.Next() {
         if path, ok := e.Value.(string); ok {
@@ -76,6 +77,7 @@ func Investigate(l *list.List) {
 
 //http://www.mrwaggel.be/post/generate-md5-hash-of-a-file/
 func HashFile(filePath string) (string, error) {
+    fmt.Println("Hashing file", filePath)
     //Initialize variable returnMD5String now in case an error has to be returned
     var returnMD5String string
 
@@ -108,10 +110,14 @@ func HashFile(filePath string) (string, error) {
 
 func main() {
     var cr = Crawler{Sizes: make(map[int64]*list.List)}
-    filepath.Walk("/home/yevgen/GoglandProjects/learning-go/fscrawler-sandbox", cr.Visitor)
+    filepath.Walk("/home/yevgen", cr.Visitor)
 
-    for _, items := range cr.Sizes {
-        Investigate(items)
+    for size, items := range cr.Sizes {
+        if items.Len() > 1 {
+            fmt.Println(strings.Repeat("-", 80))
+            fmt.Println("Possible duplicates", size, ListToString(items))
+            FindDuplicates(items)
+        }
         //fmt.Println(size, " (", items.Len(), "): ", ListToString(items))
     }
 }
