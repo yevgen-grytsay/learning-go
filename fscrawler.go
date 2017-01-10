@@ -10,7 +10,6 @@ import (
     "crypto/md5"
     "io"
     "encoding/hex"
-    "strings"
 )
 
 
@@ -108,16 +107,59 @@ func HashFile(filePath string) (string, error) {
     return returnMD5String, nil
 }
 
+type RunnableFunc func()
+
+func Defer(f RunnableFunc, ch chan string) {
+    go func() {
+        f()
+        defer func() {
+            ch <- "OK"
+        }()
+    }()
+}
+
 func main() {
     var cr = Crawler{Sizes: make(map[int64]*list.List)}
-    filepath.Walk("/home/yevgen", cr.Visitor)
+    filepath.Walk("/home/yevgen/GoglandProjects/learning-go/fscrawler-sandbox", cr.Visitor)
 
-    for size, items := range cr.Sizes {
-        if items.Len() > 1 {
-            fmt.Println(strings.Repeat("-", 80))
-            fmt.Println("Possible duplicates", size, ListToString(items))
-            FindDuplicates(items)
-        }
-        //fmt.Println(size, " (", items.Len(), "): ", ListToString(items))
+    keys := make([]int64, len(cr.Sizes))
+    i := 0
+    for k := range cr.Sizes {
+        keys[i] = k
+        i++
     }
+
+    const max = 4
+    workers := max
+    ch := make(chan string)
+    i = 0
+    for {
+        select {
+        case <- ch:
+            workers += 1
+        default:
+            if i < len(keys) && workers > 0 {
+                items := cr.Sizes[keys[i]]
+                if items.Len() > 1 {
+                    Defer(func() {
+                        FindDuplicates(items)
+                    }, ch)
+                    workers -= 1
+                }
+                i += 1
+            }
+        }
+
+        if i >= len(keys) && workers == max {
+            return
+        }
+    }
+    //for size, items := range cr.Sizes {
+    //    if items.Len() > 1 {
+    //        fmt.Println(strings.Repeat("-", 80))
+    //        fmt.Println("Possible duplicates", size, ListToString(items))
+    //        FindDuplicates(items)
+    //    }
+    //    //fmt.Println(size, " (", items.Len(), "): ", ListToString(items))
+    //}
 }
