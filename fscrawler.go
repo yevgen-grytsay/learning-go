@@ -10,6 +10,7 @@ import (
     "crypto/md5"
     "io"
     "encoding/hex"
+    "time"
 )
 
 
@@ -111,10 +112,10 @@ type RunnableFunc func()
 
 func Defer(f RunnableFunc, ch chan string) {
     go func() {
-        f()
         defer func() {
             ch <- "OK"
         }()
+        f()
     }()
 }
 
@@ -129,6 +130,7 @@ func main() {
         i++
     }
 
+    start := time.Now()
     const max = 4
     workers := max
     ch := make(chan string)
@@ -151,9 +153,12 @@ func main() {
         }
 
         if i >= len(keys) && workers == max {
+            duration := time.Now().Sub(start)
+            fmt.Println(duration)
             return
         }
     }
+
     //for size, items := range cr.Sizes {
     //    if items.Len() > 1 {
     //        fmt.Println(strings.Repeat("-", 80))
