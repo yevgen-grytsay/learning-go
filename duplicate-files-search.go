@@ -20,6 +20,9 @@ type Crawler struct {
 func (cr Crawler) Visitor(path string, info os.FileInfo, err error) error {
 	if err != nil {
 		log.Print(err)
+		return err
+	}
+	if !info.Mode().IsRegular() {
 		return nil
 	}
 	if !info.IsDir() {
