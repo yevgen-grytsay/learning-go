@@ -35,10 +35,8 @@ func run() {
 		case msg := <-chat:
 			text := fmt.Sprintf("%s: %s", msg.Nick, msg.Text)
 			for e := members.Front(); e != nil; e = e.Next() {
-				if user, ok := e.Value.(chan string); ok {
-					if user != msg.UserChan {
-						user <- text
-					}
+				if e.Value != msg.UserChan {
+					e.Value.(chan string) <- text
 				}
 			}
 		}
